@@ -1,0 +1,61 @@
+body {
+    background-color: powderblue;
+    font-family: 'Comic Sans MS', 'VERDANA', 'ARIAL', 'HELVETICA';
+    width: 100%;
+    Height: 100%;
+}
+
+h1 {
+    color: rgb(20, 20, 65);
+}
+
+input {
+    border-radius: 10px;
+    background-color: aliceblue;
+    word-spacing: 2px;
+    padding: 5px;
+    font-family: 'Comic Sans MS', 'VERDANA', 'ARIAL', 'HELVETICA';
+}
+
+input.submit {
+    background-color: rgb(234, 221, 49);
+    font-family: 'Comic Sans MS', 'VERDANA', 'ARIAL', 'HELVETICA';
+}
+
+td.caption {
+    text-align: center;
+    vertical-align: top;
+}
+/* 
+div {
+    height: 500px;
+    width: 500px;
+
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-top: -250px;
+    margin-left: -250px;
+} */
+
+hr {
+    height: 2px;
+    border-width: 0;
+    color: gray;
+    background-color: gray
+}
+
+table {
+    border: black solid 2px;
+    border-radius: 10px;
+}
+
+tr,
+td,
+th {
+    padding: 4px;
+}
+
+th {
+    font-size: 1.5em;
+}

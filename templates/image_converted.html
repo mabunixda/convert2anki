@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="{{ url_for('static',filename='styles.css') }}" />
+    <title>Generate Anki Deck</title>
+</head>
+
+<body>
+    <div>
+        <iframe>
+            {{ output }}
+        </iframe>
+    </div>
+</body>
+
+</html>

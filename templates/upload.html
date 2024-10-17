@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+
+<head>
+    <link rel="stylesheet" href= "{{ url_for('static',filename='styles.css') }}"/>
+    <title>Generate Anki Deck</title>
+</head>
+
+<body>
+    <div>
+        <table>
+            <form method=post action=/api/v1/convert enctype=multipart/form-data>
+                <tr>
+                    <td rowspan="6">&nbsp;</td>
+                    <th colspan="3" class="caption">
+                        <h1>Upload Excel</h1>
+                    </th>
+                    <td rowspan="6">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type=file name=file>
+                    </td>
+                    <td>&nbsp;</td>
+
+                    <td>
+                        <input type=submit class=submit value=Upload>
+                    </td>
+                </tr>
+
+            </form>
+            <tr>
+                <td colspan=3>
+                    <p>&nbsp;</p>
+                    <hr />
+                </td>
+            </tr>
+            <form method=post action=/api/v1/scan enctype=multipart/form-data>
+                <tr>
+                    <th colspan=3 class="caption">
+                        <h1>Upload Picture</h1>
+                    </th>
+                </tr>
+                <tr>
+                    <td>
+                        <input type=file name=file>
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>
+                        <input type=submit class=submit value=Upload>
+                    </td>
+                </tr>
+            </form>
+            <tr>
+                <td colspan=3>
+                    <p>&nbsp;</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</table>
+
+</html>

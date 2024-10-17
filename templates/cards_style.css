@@ -1,0 +1,26 @@
+body {
+    display: block;
+    font-family: "Times New Roman"
+}
+
+.term {
+    font-size: 3rem;
+}
+
+.definition {
+
+}
+
+.translation {
+
+}
+
+.example {
+    font-style: italic;
+}
+th { 
+    border-bottom: black solid 1px;
+}
+tr { 
+    border-bottom: tomato dashed 1px;
+}
