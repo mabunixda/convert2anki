@@ -3,13 +3,14 @@ body {
     font-family: 'Comic Sans MS', 'VERDANA', 'ARIAL', 'HELVETICA';
     width: 100%;
     Height: 100%;
+    
 }
 
 h1 {
     color: rgb(20, 20, 65);
 }
 
-input {
+input, select {
     border-radius: 10px;
     background-color: aliceblue;
     word-spacing: 2px;
@@ -26,17 +27,9 @@ td.caption {
     text-align: center;
     vertical-align: top;
 }
-/* 
-div {
-    height: 500px;
-    width: 500px;
-
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    margin-top: -250px;
-    margin-left: -250px;
-} */
+td.spacer { 
+    width: 25px;
+}
 
 hr {
     height: 2px;
@@ -48,6 +41,8 @@ hr {
 table {
     border: black solid 2px;
     border-radius: 10px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 tr,

@@ -13,10 +13,11 @@ def create_uuid(data: str = None) -> int:
     return int(data.encode("utf-8").hex(), 16) % (10**10)
 
 def get_hashsum(data: str) -> str: 
+    if data is None:
+        return create_uuid()
     return md5(data.encode('utf-8')).hexdigest()
 
 def load_excel(filename: Path, sheet: str = 'Sheet1') :
-    print(f"Loading {filename}")
     data_frame = pd.read_excel(io=filename, sheet_name=sheet)
     return data_frame.to_dict(orient='records')
 
@@ -24,12 +25,22 @@ def read_template(filename: str) -> str:
     with open(f"templates/{filename}", 'r') as f :
         return f.read()
     
-def extract_table_from_img(image: str) -> pd.DataFrame:
+def extract_table_from_img(image: str, lang: str) -> pd.DataFrame:
     """
     Extract tables from a PDF file.
     """  
     # Convert PIL Image to numpy array
     
+    lang = lang.lower()
+    if len(lang) > 3:
+        lang = lang[:3]
+        
+    match lang:
+        case "spa":
+            lang = "esp"
+        case _:
+            pass 
+        
     img = cv2.imread(image)
     img = cv2.resize(img, (int(img.shape[1] + (img.shape[1] * .1)),
                        int(img.shape[0] + (img.shape[0] * .25))),
@@ -38,7 +49,7 @@ def extract_table_from_img(image: str) -> pd.DataFrame:
     img_rgb = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
 
     # https://stackoverflow.com/questions/61418907/how-to-convert-or-extract-a-table-from-an-image-using-tesseract
-    custom_config = r'--oem 3 --psm 6 -c preserve_interword_spaces=1x1,tessedit_char_whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-:.$%./@& *"'
+    custom_config = fr'-l {lang}+deu --oem 3 --psm 6 -c preserve_interword_spaces=1x1,tessedit_char_whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-:.$%./@& *"'
     d = pytesseract.image_to_data(img_rgb, config=custom_config, output_type=pytesseract.Output.DICT)
     df = pd.DataFrame(d)
 

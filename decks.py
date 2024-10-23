@@ -1,20 +1,19 @@
-import argparse
+from threading import Lock
 from html import escape as html_escape
 from os import getenv
-import pandas as pd
 from pathlib import Path
 import re
-from sys import argv
 import warnings
 import genanki
 from ai import AI
 
-from helper import *
+from helper import create_uuid, read_template, extract_table_from_img, load_excel
 
 
 class AnkiDeck:
     aiclient: AI
 
+    lock = Lock()
     media_files = []
     question_column = getenv("COL_QUESTION", "Q")
     answer_column = getenv("COL_ANSWER", "A")
@@ -31,8 +30,7 @@ class AnkiDeck:
 
     def create_ai(self):
         openai_api_key = getenv("OPENAI_API_KEY", "")
-        aihub_api_key = getenv("AIHUB_API_KEY", "")
-        return AI(openai_api_key, aihub_api_key)
+        return AI(openai_api_key)
 
     def create_model(self, name: str) -> genanki.Model:
         model_id = create_uuid()
@@ -60,11 +58,11 @@ class AnkiDeck:
         )
         return model
 
-    def replace_quantifier(self, data: str, isAnswer: bool) -> str:
+    def replace_quantifier(self, data: str, is_answer: bool) -> str:
         count = 0
         for m in re.finditer(self.pattern, data):
             count += 1
-            if isAnswer:
+            if is_answer:
                 data = data[: m.start()] + m.group(1) + data[m.end() :]
             else:
                 data = (
@@ -77,8 +75,10 @@ class AnkiDeck:
 
         return data
 
-    def enhance_field(self, data: str, isAnswer: bool = False) -> str:
-        data = self.replace_quantifier(data, isAnswer)
+    def enhance_field(self, data: str, is_answer: bool = False) -> str:
+        if data == None or data == "":
+            return data
+        data = self.replace_quantifier(data, is_answer)
         data = html_escape(data)
         data = data.replace("\n", "<br/>")
         data = re.sub(r"[ ]{2,}", " ", data)
@@ -99,11 +99,11 @@ class AnkiDeck:
             if generate_example:
                 if self.example_column in r:
                     example = r[self.example_column]
-                if type(example) != type(""):
+                if not isinstance(example, str):
                     example = self.create_example_sentence(answer)
 
             answer_replace = re.compile(f"({answer})", flags=re.IGNORECASE)
-            if generate_example:
+            if generate_example and example != None:
                 for m in answer_replace.finditer(example):
                     example = (
                         example[: m.start()]
@@ -115,11 +115,11 @@ class AnkiDeck:
 
             raw_example = self.enhance_field(example)
             question = self.enhance_field(question)
-            answer = self.enhance_field(answer, isAnswer=True)
-            example = self.enhance_field(example, isAnswer=True)
+            answer = self.enhance_field(answer, is_answer=True)
+            example = self.enhance_field(example, is_answer=True)
 
             note = genanki.Note(
-                guid = create_uuid(question),
+                guid=create_uuid(question),
                 sort_field=question,
                 model=custom_model,
                 fields=[
@@ -133,10 +133,8 @@ class AnkiDeck:
                     self.create_image(example),
                 ],
             )
-
             my_deck.add_note(note)
 
-        print(f"Generated {len(data)} notes...")
         return my_deck
 
     def create_ipa(self, term: str) -> str:
@@ -144,32 +142,37 @@ class AnkiDeck:
 
     def create_image(self, term: str) -> str:
         path = self.aiclient.create_example_image(term)
+        if path == None or path == "":
+            return path
         self.media_files.append(path)
         return f'<img src="{Path(path).name}">'
 
     def create_tts(self, term: str):
         path = self.aiclient.create_tts(term)
+        if path == None or path == "":
+            return path
         self.media_files.append(path)
         return f"[sound:{Path(path).name}]"
 
     def create_example_sentence(self, term: str) -> str:
         return self.aiclient.create_example_sentence(term)
 
-    def process_image(self, filename: str) -> str:
-        # current = Path(filename)
-        # data_filename = current.with_suffix(".xlsx")
-        data = extract_table_from_img(filename)
-        # data =  data.replace("\n", "<br/>")
-        # data = data.replace(" ", "&nbsp;")
-        return data
-        # data.to_excel(data_filename)
-        # return data_filename
+    def process_image(self, filename: str, language: str) -> str:
+        data = ""
+        with self.lock:
+            self.aiclient.set_language(language)
+            data = extract_table_from_img(filename, language)
 
-    def processExcel(self, filename: str, output: str = None) -> str:
+        return data
+
+    def process_excel(self, filename: str, language: str) -> str:
         current = Path(filename)
         anki_filename = current.with_suffix(".apkg")
         data = load_excel(current)
-        self.process_data(anki_filename, data)
+        with self.lock:
+            self.aiclient.set_language(language)
+            self.process_data(anki_filename, data)
+
         return anki_filename
 
     def process_data(self, anki_filename: str, data):
@@ -178,9 +181,5 @@ class AnkiDeck:
             package = genanki.Package(deck)
             package.media_files = self.media_files
             package.write_to_file(anki_filename)
-
-        assert not warning_list
-
-        print(f"Generated {anki_filename} successfully...")
 
         return anki_filename
