@@ -1,3 +1,4 @@
+import asyncio
 from threading import Lock
 from html import escape as html_escape
 from os import getenv
@@ -5,6 +6,7 @@ from pathlib import Path
 import re
 import warnings
 import genanki
+import pandas as pd
 from ai import AI
 
 from helper import create_uuid, read_template, extract_table_from_img, load_excel
@@ -84,56 +86,69 @@ class AnkiDeck:
         data = re.sub(r"[ ]{2,}", " ", data)
         return data
 
-    def data_to_anki(
+    async def _process_item(
+        self, r: dict, custom_model: str, generate_example: bool
+    ) -> genanki.Note:
+        question = r[self.question_column]
+        answer = r[self.answer_column]
+        example = ""
+
+        if generate_example:
+            if self.example_column in r:
+                example = r[self.example_column]
+            if not isinstance(example, str):
+                example = self.create_example_sentence(answer)
+
+        answer_replace = re.compile(f"({answer})", flags=re.IGNORECASE)
+        if generate_example and example != None:
+            for m in answer_replace.finditer(example):
+                example = (
+                    example[: m.start()] + "{{" + m.group(1) + "}}" + example[m.end() :]
+                )
+
+        raw_example = self.enhance_field(example)
+        question = self.enhance_field(question)
+        answer = self.enhance_field(answer, is_answer=True)
+        example = self.enhance_field(example, is_answer=True)
+
+        note = genanki.Note(
+            guid=create_uuid(question),
+            sort_field=question,
+            model=custom_model,
+            fields=[
+                question,
+                raw_example,
+                answer,
+                self.create_tts(answer),
+                self.create_ipa(answer),
+                example,
+                self.create_tts(example),
+                self.create_image(example),
+            ],
+        )
+        return note
+
+
+    async def _data_to_anki(
         self, deck_name: str, data, generate_example: bool = True
     ) -> genanki.Deck:
         deck_id = create_uuid(deck_name)
         my_deck = genanki.Deck(deck_id, deck_name)
         custom_model = self.create_model(deck_name)
 
-        for r in data:
-            question = r[self.question_column]
-            answer = r[self.answer_column]
-            example = ""
-
-            if generate_example:
-                if self.example_column in r:
-                    example = r[self.example_column]
-                if not isinstance(example, str):
-                    example = self.create_example_sentence(answer)
-
-            answer_replace = re.compile(f"({answer})", flags=re.IGNORECASE)
-            if generate_example and example != None:
-                for m in answer_replace.finditer(example):
-                    example = (
-                        example[: m.start()]
-                        + "{{"
-                        + m.group(1)
-                        + "}}"
-                        + example[m.end() :]
-                    )
-
-            raw_example = self.enhance_field(example)
-            question = self.enhance_field(question)
-            answer = self.enhance_field(answer, is_answer=True)
-            example = self.enhance_field(example, is_answer=True)
-
-            note = genanki.Note(
-                guid=create_uuid(question),
-                sort_field=question,
-                model=custom_model,
-                fields=[
-                    question,
-                    raw_example,
-                    answer,
-                    self.create_tts(answer),
-                    self.create_ipa(answer),
-                    example,
-                    self.create_tts(example),
-                    self.create_image(example),
-                ],
-            )
+        tasks = [asyncio.create_task(self._process_item(r,  custom_model=custom_model, generate_example=generate_example)) for r in data]
+        done,pending = await asyncio.wait(tasks)
+        for i in range(len(done)):
+            note = done.pop().result()
             my_deck.add_note(note)
+
+        return my_deck        
+
+    def data_to_anki(
+        self, deck_name: str, data, generate_example: bool = True
+    ) -> genanki.Deck:
+
+        my_deck = asyncio.run(self._data_to_anki(deck_name, data, generate_example))
 
         return my_deck
 
@@ -157,7 +172,7 @@ class AnkiDeck:
     def create_example_sentence(self, term: str) -> str:
         return self.aiclient.create_example_sentence(term)
 
-    def process_image(self, filename: str, language: str) -> str:
+    def process_image(self, filename: str, language: str) -> pd.DataFrame:
         data = ""
         with self.lock:
             self.aiclient.set_language(language)

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import shutil
 
 from flask import Flask, request, flash, redirect, url_for, send_from_directory, render_template, make_response
 from werkzeug.utils import secure_filename
@@ -7,6 +8,7 @@ from werkzeug.utils import secure_filename
 from decks import AnkiDeck
 
 UPLOAD_FOLDER = "./media/uploads"
+DOWNLOAD_FOLDER = "./media/downloads"
 ALLOWED_EXTENSIONS = {"csv", "xls", "xlsx", "png", "tif", "jpg"}
 DEBUG = True
 PORT = os.getenv("PORT")
@@ -37,14 +39,18 @@ def scan_picture():
     language = request.form.get("language")
     filename = secure_filename(file.filename)
 
-    fpath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    print(app.config["UPLOAD_FOLDER"], filename)
+    fpath = Path.joinpath(Path(app.config["UPLOAD_FOLDER"]), filename)
     file.save(fpath)
+
+    print(fpath)
+    download = Path.joinpath(Path(app.config["DOWNLOAD_FOLDER"]), fpath.with_suffix(".xlsx").name)
 
     output =  app.config["decks"].process_image(fpath, language)
 
-    response = make_response(output, 200)
-    response.mimetype = "text/plain"
-    return response
+    output.to_excel(download)
+    return redirect(url_for("download_file", name=Path(download).name))
+
 
 @app.route("/api/v1/convert", methods=["POST"])
 def convert_deckset():
@@ -65,7 +71,11 @@ def convert_deckset():
     file.save(fpath)
     
     output = app.config["decks"].process_excel(fpath, language)
-    return redirect(url_for("download_file", name=Path(output).name))
+    
+    download = Path(app.config["DOWNLOAD_FOLDER"]).joinpath(Path(output).name)
+    shutil.move(output, download)
+    
+    return redirect(url_for("download_file", name=Path(download).name))
 
 @app.route("/api/v1/download")
 def list_downloads():
@@ -73,7 +83,7 @@ def list_downloads():
 
 @app.route("/api/v1/download/<name>")
 def download_file(name):
-    return send_from_directory(app.config["UPLOAD_FOLDER"], name)
+    return send_from_directory(app.config["DOWNLOAD_FOLDER"], name)
 
 
 @app.route("/")

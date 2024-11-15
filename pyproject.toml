@@ -1,23 +1,25 @@
 [tool.poetry]
-name = "excel2anki"
+name = "convert2anki"
 version = "0.1.0"
 description = ""
 authors = ["Martin Buchleitner <martin@nitram.at>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.12"
+python = "~3.10"
 genanki = "^0.13.1"
 pandas = "^2.2.3"
 openpyxl = "^3.1.5"
 argparse = "^1.4.0"
-openai = "^1.51.2"
 flask = "^3.0.3"
 requests = "^2.32.3"
-pillow = "^11.0.0"
-pytesseract = "^0.3.13"
-opencv-python = "^4.10.0.84"
-numpy = "^2.1.2"
+docling = "^2.3.1"
+ollama = "^0.3.3"
+soundfile = "^0.12.1"
+transformers = "^4.46.2"
+datasets = "^3.1.0"
+sentencepiece = "^0.2.0"
+webuiapi = "^0.9.16"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.3.1"
