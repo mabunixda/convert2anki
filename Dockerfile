@@ -19,7 +19,7 @@ ADD pyproject.toml poetry.lock .
 RUN poetry install \ 
     && mkdir -p media/uploads media/downloads
 
-VOLUME [ "/app/media" ]
+VOLUME [ "/app/media", "/app/.cache" ]
 
 USER app
 ADD *.py .

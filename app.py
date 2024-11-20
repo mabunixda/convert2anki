@@ -65,12 +65,13 @@ def convert_deckset():
         return None
     
     language = request.form.get("language")
+    blank_backside = request.form.get("blank_backside") == "on"
     
     filename = secure_filename(file.filename)
     fpath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
     file.save(fpath)
     
-    output = app.config["decks"].process_excel(fpath, language)
+    output = app.config["decks"].process_excel(fpath, language, blank_backside)
     
     download = Path(app.config["DOWNLOAD_FOLDER"]).joinpath(Path(output).name)
     shutil.move(output, download)

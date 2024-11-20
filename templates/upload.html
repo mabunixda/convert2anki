@@ -11,19 +11,42 @@
         <table>
             <tr>
                 <td rowspan="7" class="spacer">&nbsp;</td>
-                <th colspan=3>
+                <th colspan="4">
                 </th>
                 <td rowspan="7" class="spacer">&nbsp;</td>
             </tr>
 
             <form method=post action=/api/v1/scan enctype=multipart/form-data>
                 <tr>
-                    <th colspan=3 class="caption">
+                    <th colspan="4" class="caption">
                         <h1>Picture 2 Table</h1>
                     </th>
                 </tr>
                 <tr>
-                    <td colspan="3">
+                    <td colspan="4">
+                        <input type=file name=file>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Language:</td>
+                    <td><select name=language>
+                            <option value="english" selected>Englisch</option>
+                            <option value="spanish">Spanisch</option>
+                        </select></td>
+                    <td colspan="2" align="right">
+                        <input type=submit class=submit value=Upload>
+                    </td>
+                </tr>
+            </form>
+
+            <form method=post action=/api/v1/convert enctype=multipart/form-data>
+                <tr>
+                    <th colspan="4" class="caption">
+                        <h1>Excel 2 Anki</h1>
+                    </th>
+                </tr>
+                <tr>
+                    <td colspan="4">
                         <input type=file name=file>
                     </td>
                 </tr>
@@ -34,28 +57,8 @@
                             <option value="spanish">Spanisch</option>
                         </select></td>
                     <td>
-                        <input type=submit class=submit value=Upload>
+                        Printable <input type="checkbox" name="blank_backside" />
                     </td>
-                </tr>
-            </form>
-
-            <form method=post action=/api/v1/convert enctype=multipart/form-data>
-                <tr>
-                    <th colspan="3" class="caption">
-                        <h1>Excel 2 Anki</h1>
-                    </th>
-                </tr>
-                <tr>
-                    <td colspan="3">
-                        <input type=file name=file>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Language:</td>
-                    <td><select name=language>
-                            <option value="english" selected>Englisch</option>
-                            <option value="spanish">Spanisch</option>
-                        </select></td>
                     <td>
                         <input type=submit class=submit value=Upload>
                     </td>

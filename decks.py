@@ -87,19 +87,20 @@ class AnkiDeck:
         return data
 
     async def _process_item(
-        self, r: dict, custom_model: str, generate_example: bool
+        self, r: dict, custom_model: str, blank_backside: bool, generate_example: bool
     ) -> genanki.Note:
         question = r[self.question_column]
         answer = r[self.answer_column]
         example = ""
 
-        if generate_example:
+        if generate_example and not blank_backside:
             if self.example_column in r:
                 example = r[self.example_column]
             if not isinstance(example, str):
                 example = self.create_example_sentence(answer)
 
         answer_replace = re.compile(f"({answer})", flags=re.IGNORECASE)
+
         if generate_example and example != None:
             for m in answer_replace.finditer(example):
                 example = (
@@ -112,31 +113,36 @@ class AnkiDeck:
         example = self.enhance_field(example, is_answer=True)
 
         note = genanki.Note(
-            guid=create_uuid(question),
+            guid=create_uuid(question if not blank_backside else f"{question}_print"),
             sort_field=question,
             model=custom_model,
             fields=[
                 question,
-                raw_example,
+                "" if blank_backside else raw_example,
                 answer,
-                self.create_tts(answer),
-                self.create_ipa(answer),
+                "" if blank_backside else  self.create_tts(answer),
+                "" if blank_backside else  self.create_ipa(answer),
                 example,
-                self.create_tts(example),
-                self.create_image(example),
+                "" if blank_backside else self.create_tts(example),
+                "" if blank_backside else  self.create_image(example),
             ],
         )
+
         return note
 
 
     async def _data_to_anki(
-        self, deck_name: str, data, generate_example: bool = True
+        self, name: str, data, blank_backside: bool = True, generate_example: bool = True
     ) -> genanki.Deck:
+        deck_name = name if not blank_backside else f"{name} print"
         deck_id = create_uuid(deck_name)
         my_deck = genanki.Deck(deck_id, deck_name)
         custom_model = self.create_model(deck_name)
 
-        tasks = [asyncio.create_task(self._process_item(r,  custom_model=custom_model, generate_example=generate_example)) for r in data]
+        tasks = [asyncio.create_task(self._process_item(r,  
+                                        custom_model=custom_model, 
+                                        blank_backside=blank_backside,
+                                        generate_example=generate_example)) for r in data]
         done,pending = await asyncio.wait(tasks)
         for i in range(len(done)):
             note = done.pop().result()
@@ -145,10 +151,12 @@ class AnkiDeck:
         return my_deck        
 
     def data_to_anki(
-        self, deck_name: str, data, generate_example: bool = True
+        self, deck_name: str, data, 
+        blank_backside: bool = True,
+        generate_example: bool = True
     ) -> genanki.Deck:
 
-        my_deck = asyncio.run(self._data_to_anki(deck_name, data, generate_example))
+        my_deck = asyncio.run(self._data_to_anki(deck_name, data, blank_backside, generate_example))
 
         return my_deck
 
@@ -180,18 +188,18 @@ class AnkiDeck:
 
         return data
 
-    def process_excel(self, filename: str, language: str) -> str:
+    def process_excel(self, filename: str, language: str, blank_backside: bool = False) -> str:
         current = Path(filename)
         anki_filename = current.with_suffix(".apkg")
         data = load_excel(current)
         with self.lock:
             self.aiclient.set_language(language)
-            self.process_data(anki_filename, data)
+            self.process_data(anki_filename, data, blank_backside)
 
         return anki_filename
 
-    def process_data(self, anki_filename: str, data):
-        deck = self.data_to_anki(anki_filename.with_suffix("").name, data)
+    def process_data(self, anki_filename: str, data, blank_backside: bool):
+        deck = self.data_to_anki(anki_filename.with_suffix("").name, data, blank_backside=blank_backside, generate_example=True)
         with warnings.catch_warnings(record=True) as warning_list:
             package = genanki.Package(deck)
             package.media_files = self.media_files

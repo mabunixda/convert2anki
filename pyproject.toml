@@ -6,7 +6,7 @@ authors = ["Martin Buchleitner <martin@nitram.at>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "~3.10"
+python = "~3.12"
 genanki = "^0.13.1"
 pandas = "^2.2.3"
 openpyxl = "^3.1.5"
